@@ -12,7 +12,7 @@ x-airflow-common:
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     # yamllint disable rule:line-length
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
@@ -46,14 +46,14 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-    ports:
-      - "5433:5432"  # Expose PostgreSQL port for external connections if needed
+    # ports:
+    #   - "5432:5432"  # Expose PostgreSQL port for external connections if needed
 
   airflow-apiserver:
     <<: *airflow-common
     command: api-server
     ports:
-      - "8081:8080"
+      - "0.0.0.0:8081:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
       interval: 30s
@@ -220,4 +220,3 @@ services:
 
 volumes:
   postgres-db-volume:
-  

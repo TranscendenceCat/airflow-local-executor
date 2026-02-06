@@ -25,7 +25,6 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    # - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/opt/airflow/requirements.txt
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -36,9 +35,9 @@ services:
   postgres:
     image: postgres:16
     # environment:
-      # POSTGRES_USER: airflow
-      # POSTGRES_PASSWORD: airflow
-      # POSTGRES_DB: airflow
+    #   POSTGRES_USER: airflow
+    #   POSTGRES_PASSWORD: airflow
+    #   POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:

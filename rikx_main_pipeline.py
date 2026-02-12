@@ -23,36 +23,27 @@ with DAG(
     tags=['clickhouse'],
 ) as dag:
 
-    start = DummyOperator(task_id='start')
-    end = DummyOperator(task_id='end')
-
     # First ClickHouse query
-    query_1 = ClickHouseOperator(
+    user_data = ClickHouseOperator(
         task_id='user_data',
         clickhouse_conn_id='rikx_ch',
         sql="""
-            drop table vitrines.user_data;
-            create table vitrines.user_data as
-            select
-            	user_id,
-            	min(event_time) as install_time,
-            	if(
-            		(anyIf(toString(parameters.get_request.utm_campaign), event_name = 'registered') as campaign) > '',
-            		campaign,
-            		'other'
-            	) as utm_campaign
-            --	anyIf(toString(parameters.get_request.zID), event_name = 'registered') as zID,
-            --	anyIf(toString(parameters.get_request.happs), event_name = 'registered') as happs,
-            --	anyIf(toString(parameters.get_request.crID), event_name = 'registered') as crID,
-            --	anyIf(toString(parameters.get_request.land), event_name = 'registered') as land,
-            --	anyIf(toString(parameters.get_request.utm_content), event_name = 'registered') as utm_content,
-            --	anyIf(toString(parameters.get_request.bnid), event_name = 'registered') as bnid
-            from rikx.events
-            where app_version != 'dashboards_test'
-              and event_time >= '2026-02-01'
-              and event_time <= '2027-01-01'
-              and app_version >= '0.30.3'
-            group by user_id;
+drop table vitrines.user_data;
+create table vitrines.user_data as
+select
+	user_id,
+	min(event_time) as install_time,
+	if(
+		(anyIf(toString(parameters.get_request.utm_campaign), event_name = 'registered') as campaign) > '',
+		campaign,
+		'other'
+	) as utm_campaign
+from rikx.events
+where app_version != 'dashboards_test'
+  and event_time >= '2026-02-01'
+  and event_time <= '2027-01-01'
+  and app_version >= '0.30.3'
+group by user_id;
         """,
         database='default',  # Your database name
     )
@@ -89,4 +80,4 @@ with DAG(
     # )
 
     # Set task dependencies - sequential execution
-    start >> query_1 >> end # >> query_2 >> query_3
+user_data # >> query_2 >> query_3

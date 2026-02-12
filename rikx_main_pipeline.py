@@ -16,9 +16,10 @@ with DAG(
     'rikx_main_pipeline',
     default_args=default_args,
     description='Updating Datalens vitrines',
-    schedule_interval=None,  # Set to None for manual trigger, or use cron expression
+    schedule_interval='0 * * * *',  # Set to None for manual trigger, or use cron expression
     start_date=datetime(2025, 2, 1),
     catchup=False,
+    max_active_runs=1,
     tags=['clickhouse'],
 ) as dag:
 
@@ -27,7 +28,7 @@ with DAG(
 
     # First ClickHouse query
     query_1 = ClickHouseOperator(
-        task_id='first_query',
+        task_id='user_data',
         clickhouse_conn_id='rikx_ch',
         sql="""
             drop table vitrines.user_data;

@@ -15,7 +15,7 @@ with DAG(
     'rikx_main_pipeline',
     default_args=default_args,
     description='Updating Datalens vitrines',
-    schedule_interval='0 * * * *',  # Set to None for manual trigger, or use cron expression
+    schedule='0 * * * *',  # Set to None for manual trigger, or use cron expression
     start_date=datetime(2025, 2, 1),
     catchup=False,
     max_active_runs=1,

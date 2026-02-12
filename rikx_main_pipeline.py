@@ -27,7 +27,7 @@ with DAG(
         task_id='user_data',
         clickhouse_conn_id='rikx_ch',
         sql="""
-drop table if exists vitrines.user_data;
+drop table if exists vitrines.user_data
         """,
         database='default',  # Your database name
     )

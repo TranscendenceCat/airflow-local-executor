@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
-from airflow.operators.dummy import DummyOperator
 
 default_args = {
     'owner': 'airflow',

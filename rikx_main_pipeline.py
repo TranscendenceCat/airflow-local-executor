@@ -15,53 +15,35 @@ with DAG(
     'rikx_main_pipeline',
     default_args=default_args,
     description='Updating Datalens vitrines',
-    schedule='0 * * * *',  # Set to None for manual trigger, or use cron expression
+    schedule='0 * * * *',
     start_date=datetime(2025, 2, 1),
     catchup=False,
     max_active_runs=1,
     tags=['clickhouse'],
 ) as dag:
 
-    # First ClickHouse query
-    user_data = ClickHouseOperator(
+    user_data_calc = ClickHouseOperator(
         task_id='user_data',
         clickhouse_conn_id='rikx_ch',
-        sql="""
-drop table if exists vitrines.user_data
-        """,
-        database='default',  # Your database name
+        sql=[
+            """drop table if exists vitrines.user_data""",
+            """create table vitrines.user_data as
+            select
+            	user_id,
+            	min(event_time) as install_time,
+            	if(
+            		(anyIf(toString(parameters.get_request.utm_campaign), event_name = 'registered') as campaign) > '',
+            		campaign,
+            		'other'
+            	) as utm_campaign
+            from rikx.events
+            where app_version != 'dashboards_test'
+              and event_time >= '2026-02-01'
+              and event_time <= '2027-01-01'
+              and app_version >= '0.30.3'
+            group by user_id""",
+        ],
+        database='default',
     )
 
-    # Second ClickHouse query
-    # query_2 = ClickHouseOperator(
-    #     task_id='second_query',
-    #     clickhouse_conn_id='clickhouse_default',
-    #     sql="""
-    #         INSERT INTO summary_table (date, count)
-    #         SELECT 
-    #             today(),
-    #             COUNT(*) 
-    #         FROM your_table 
-    #         WHERE date = today()
-    #     """,
-    #     database='default',
-    # )
-
-    # Third ClickHouse query
-    # query_3 = ClickHouseOperator(
-    #     task_id='third_query',
-    #     clickhouse_conn_id='clickhouse_default',
-    #     sql="""
-    #         SELECT 
-    #             date,
-    #             SUM(amount) as total_amount
-    #         FROM transactions 
-    #         WHERE date >= today() - INTERVAL 7 DAY
-    #         GROUP BY date
-    #         ORDER BY date
-    #     """,
-    #     database='default',
-    # )
-
-    # Set task dependencies - sequential execution
-user_data # >> query_2 >> query_3
+user_data_calc

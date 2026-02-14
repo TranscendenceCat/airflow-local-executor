@@ -7,6 +7,11 @@ from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
 
 from airflow.operators.python import PythonOperator
 
+import logging
+
+logger = logging.getLogger(__name__)
+# logger.info("This is a log message")
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -35,12 +40,14 @@ with DAG(
 
     # @task(task_id="print_the_context")
     def HookCallable():
+        logger.info("This is a log message in hook")
         try:
             ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
             q = 'show databases'
             data = list(ch_conn.run(q))
         except Exception as error:
             print("An exception occurred:", error)
+        logger.info("This is a log message after hook")
         return data
 
     task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)

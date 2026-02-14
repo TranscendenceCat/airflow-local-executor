@@ -33,7 +33,7 @@ with DAG(
     #     sql="""show databases""",
     # )
 
-    @task(task_id="print_the_context")
+    # @task(task_id="print_the_context")
     def HookCallable():
         try:
             ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
@@ -43,8 +43,9 @@ with DAG(
             print("An exception occurred:", error)
         return data
 
-task_return_value = HookCallable()
+    task_run = (task_id="user_data_calc", python_callable=HookCallable)
 
+task_run
     # user_data_calc = EmptyOperator(task_id="start_task")
 
 # user_data_calc

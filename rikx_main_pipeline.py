@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
+from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
 
 default_args = {

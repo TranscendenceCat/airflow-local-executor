@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
+# from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
 from airflow.providers.standard.operators.empty import EmptyOperator
-from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
+# from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
 
 from airflow.operators.python import PythonOperator
 
@@ -53,6 +53,3 @@ with DAG(
     task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)
 
 task_run
-    # user_data_calc = EmptyOperator(task_id="start_task")
-
-# user_data_calc

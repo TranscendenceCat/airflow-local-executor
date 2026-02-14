@@ -26,7 +26,6 @@ with DAG(
         task_id='user_data',
         clickhouse_conn_id='rikx_ch',
         sql="""show databases""",
-        database='default',
     )
 
 user_data_calc

@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 with DAG(
     dag_id="rikx_main_pipeline",
-    start_date=datetime.datetime(2021, 1, 1),
-    schedule="@daily",
     start_date=datetime(2025, 2, 1),
     description='Updating Datalens vitrines',
     schedule='0 * * * *',

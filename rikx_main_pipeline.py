@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
+from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -21,11 +23,21 @@ with DAG(
     max_active_runs=1,
     tags=['clickhouse'],
 ) as dag:
+    
+    try:
+        ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
+        q = 'show databases'
+        data = list(ch_conn.run(q))
+        print(data)
+    except Exception as error:
+        print("An exception occurred:", error)
+    
+    # user_data_calc = ClickHouseOperator(
+    #     task_id='user_data',
+    #     clickhouse_conn_id='rikx_ch',
+    #     sql="""show databases""",
+    # )
 
-    user_data_calc = ClickHouseOperator(
-        task_id='user_data',
-        clickhouse_conn_id='rikx_ch',
-        sql="""show databases""",
-    )
+    user_data_calc = EmptyOperator(task_id="start_task")
 
 user_data_calc

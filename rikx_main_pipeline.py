@@ -43,7 +43,7 @@ with DAG(
             print("An exception occurred:", error)
         return data
 
-    task_run = (task_id="user_data_calc", python_callable=HookCallable)
+    task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)
 
 task_run
     # user_data_calc = EmptyOperator(task_id="start_task")

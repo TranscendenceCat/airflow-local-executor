@@ -5,16 +5,6 @@ from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
 
-def HookCallable():
-    try:
-        ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
-        q = 'show databases'
-        data = list(ch_conn.run(q))
-        print(data)
-    except Exception as error:
-        print("An exception occurred:", error)
-    return
-
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -41,12 +31,18 @@ with DAG(
     #     sql="""show databases""",
     # )
 
-    user_data_calc = PythonOperator(
-        task_id='print_the_context',
-        python_callable=HookCallable,
-        dag=dag,
-    )
+    @task
+    def HookCallable():
+        try:
+            ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
+            q = 'show databases'
+            data = list(ch_conn.run(q))
+        except Exception as error:
+            print("An exception occurred:", error)
+        return data
+
+    task_return_value = HookCallable()
 
     # user_data_calc = EmptyOperator(task_id="start_task")
 
-user_data_calc
+# user_data_calc

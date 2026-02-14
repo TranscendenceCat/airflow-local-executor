@@ -5,32 +5,26 @@ from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 # from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
 
-from airflow.operators.python import PythonOperator
+# from airflow.operators.python import PythonOperator
 
 import logging
 
 logger = logging.getLogger(__name__)
 # logger.info("This is a log message")
 
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'email_on_failure': False,
-    'email_on_retry': False,
-    # 'retries': 1,
-    # 'retry_delay': timedelta(minutes=5),
-}
-
 with DAG(
-    'rikx_main_pipeline',
-    default_args=default_args,
+    dag_id="rikx_main_pipeline",
+    start_date=datetime.datetime(2021, 1, 1),
+    schedule="@daily",
+    start_date=datetime(2025, 2, 1),
     description='Updating Datalens vitrines',
     schedule='0 * * * *',
-    start_date=datetime(2025, 2, 1),
     catchup=False,
     max_active_runs=1,
     tags=['clickhouse'],
-) as dag:
+):
+
+    task_run = EmptyOperator(task_id="task")
     
     # user_data_calc = ClickHouseOperator(
     #     task_id='user_data',
@@ -39,17 +33,17 @@ with DAG(
     # )
 
     # @task(task_id="print_the_context")
-    def HookCallable():
-        logger.info("This is a log message in hook")
-        try:
-            # ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
-            q = 'show databases'
-            # data = list(ch_conn.run(q))
-        except Exception as error:
-            print("An exception occurred:", error)
-        logger.info("This is a log message after hook")
-        return data
+    # def HookCallable():
+    #     logger.info("This is a log message in hook")
+    #     try:
+    #         # ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
+    #         q = 'show databases'
+    #         # data = list(ch_conn.run(q))
+    #     except Exception as error:
+    #         print("An exception occurred:", error)
+    #     logger.info("This is a log message after hook")
+    #     return data
 
-    task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)
+    # task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)
 
 task_run

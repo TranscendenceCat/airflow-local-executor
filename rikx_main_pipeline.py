@@ -42,9 +42,9 @@ with DAG(
     def HookCallable():
         logger.info("This is a log message in hook")
         try:
-            ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
+            # ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
             q = 'show databases'
-            data = list(ch_conn.run(q))
+            # data = list(ch_conn.run(q))
         except Exception as error:
             print("An exception occurred:", error)
         logger.info("This is a log message after hook")

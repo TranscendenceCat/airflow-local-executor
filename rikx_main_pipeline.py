@@ -407,7 +407,7 @@ with battle_data as(
 		event_time,
 		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
 	from rikx.events
-	where event_name = 'battle_start'
+	where event_name = 'battle_finish'
 	  and app_version != 'dashboards_test'
 	  and event_time >= '2026-02-01'
 	  and event_time <= '2027-01-01'
@@ -432,8 +432,8 @@ select
 	battle_number,
 	uniqExact(user_id) as users,
 	sum(delta) as time_to_reach
-from battle_stat as A
-left join vitrines.user_data as B
+from vitrines.user_data as B
+left join battle_stat as A 
 using user_id
 group by install_date, utm_campaign, battle_number
 order by battle_number''',

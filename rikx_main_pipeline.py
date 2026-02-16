@@ -281,18 +281,19 @@ sql_tutorial = [
 select
 	toDate(install_time) as install_date,
 	utm_campaign,
-	toString(parameters.step) as step,
+	event_name as step_name,
+	if(event_name == 'registered', -1, toInt32(extract(toString(parameters.step), '.*_0*([0-9]+)_.*'))) as step,
 	count() as count
 from rikx.events  as A
 left join vitrines.user_data as B
 using user_id
-where event_name = 'tutorial'
+where event_name in ('tutorial', 'registered')
   and app_version != 'dashboards_test'
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by install_date, utm_campaign, step
-order by install_date, utm_campaign, step''',
+group by install_date, utm_campaign, step, step_name
+order by install_date, utm_campaign, step, step_name''',
 ]
 
 

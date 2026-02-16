@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
 from airflow import DAG
+from airflow.providers.standard.operators.python import PythonOperator
 
 import clickhouse_driver
 
 def execute_query(params):
     client = clickhouse_driver.Client(
-        host=,
-        port=,
-        login=,
-        password=
+        host='',
+        port='',
+        login='',
+        password=''
     )
     print(client_execute(params['query']))
 

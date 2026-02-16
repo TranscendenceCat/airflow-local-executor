@@ -429,7 +429,7 @@ battle_stat as (
 select
 	toDate(install_time) as install_date,
 	utm_campaign,
-	battle_number,
+	toInt32(battle_number) as battle_number,
 	uniqExact(user_id) as users,
 	sum(delta) as time_to_reach
 from vitrines.user_data as B

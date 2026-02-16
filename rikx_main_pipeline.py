@@ -1,16 +1,18 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-# from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
-from airflow.providers.standard.operators.empty import EmptyOperator
-# from airflow.providers.clickhouse.hooks.clickhouse import ClickHouseHook
+import clickhouse_driver
 
-# from airflow.operators.python import PythonOperator
+def execute_query(params):
+    client = clickhouse_driver.Client(
+        host=,
+        port=,
+        login=,
+        password=
+    )
+    print(client_execute(params['query']))
 
-import logging
-
-logger = logging.getLogger(__name__)
-# logger.info("This is a log message")
+show_databases = '''show databases'''
 
 with DAG(
     dag_id="rikx_main_pipeline",
@@ -21,27 +23,11 @@ with DAG(
     max_active_runs=1,
     tags=['clickhouse'],
 ):
-
-    task_run = EmptyOperator(task_id="task")
     
-    # user_data_calc = ClickHouseOperator(
-    #     task_id='user_data',
-    #     clickhouse_conn_id='rikx_ch',
-    #     sql="""show databases""",
-    # )
-
-    # @task(task_id="print_the_context")
-    # def HookCallable():
-    #     logger.info("This is a log message in hook")
-    #     try:
-    #         # ch_conn = ClickHouseHook(clickhouse_conn_id='rikx_ch')
-    #         q = 'show databases'
-    #         # data = list(ch_conn.run(q))
-    #     except Exception as error:
-    #         print("An exception occurred:", error)
-    #     logger.info("This is a log message after hook")
-    #     return data
-
-    # task_run = PythonOperator(task_id="user_data_calc", python_callable=HookCallable)
+    task_run = PythonOperator(
+        task_id='show_databases',
+        params={"query": show_databases},
+        python_callable=execute_query,
+    )
 
 task_run

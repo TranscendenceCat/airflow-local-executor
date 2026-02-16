@@ -429,14 +429,23 @@ battle_stat as (
 select
 	toDate(install_time) as install_date,
 	utm_campaign,
-	toInt32(battle_number) as battle_number,
+	battle_number,
 	uniqExact(user_id) as users,
 	sum(delta) as time_to_reach
-from vitrines.user_data as B
-left join battle_stat as A 
+from battle_stat as A
+left join vitrines.user_data as B
 using user_id
 group by install_date, utm_campaign, battle_number
-order by battle_number''',
+order by battle_number
+union all
+select
+	toDate(install_time) as install_date,
+	utm_campaign,
+	0 as battle_number,
+	uniqExact(user_id) as users,
+	0 as time_to_reach
+from vitrines.user_data
+group by install_date, utm_campaign, battle_number''',
 ]
 
 

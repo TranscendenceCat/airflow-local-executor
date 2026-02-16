@@ -226,6 +226,217 @@ order by time''',
 
 
 
+sql_session_duration = [
+'''drop table if exists vitrines.session_duration''',
+'''create table if not exists vitrines.session_duration as
+with events_with_sessions as (
+	select
+		user_id,
+		event_time,
+		previous_event_time,
+		-- Define session based on 30-minute inactivity (adjust as needed)
+		case when dateDiff('minute', previous_event_time, event_time) > 30
+		    and dateDiff('minute', previous2_event_time, previous_event_time) < 30
+			or previous_event_time is null
+			then 1
+			else 0
+		end as is_new_session,
+		sum(is_new_session) over (
+			partition by user_id
+			order by event_time
+			rows between unbounded preceding and current row
+		) as session_number
+	from (
+		select
+			user_id,
+			event_time,
+			lag(event_time) over (partition by user_id order by event_time) as previous_event_time,
+			lag(event_time, 2) over (partition by user_id order by event_time) as previous2_event_time
+		from rikx.events
+		where app_version != 'dashboards_test'
+		  and event_time >= '2026-02-01'
+		  and event_time <= '2027-01-01'
+		  and app_version >= '0.30.3'
+	)
+)
+select
+	user_id,
+	toDate(install_time) as install_date,
+	utm_campaign,
+	session_number,
+	dateDiff('second', min(event_time), max(event_time)) as session_duration_seconds,
+	count(*) as events_in_session
+from events_with_sessions as A
+left join vitrines.user_data as B
+using user_id
+group by user_id, session_number, utm_campaign, install_date
+having session_duration_seconds > 0''',
+]
+
+
+
+sql_tutorial = [
+'''drop table if exists vitrines.tutorial''',
+'''create table if not exists vitrines.tutorial as
+select
+	toDate(install_time) as install_date,
+	utm_campaign,
+	toString(parameters.step) as step,
+	count() as count
+from rikx.events  as A
+left join vitrines.user_data as B
+using user_id
+where event_name = 'tutorial'
+  and app_version != 'dashboards_test'
+  and event_time >= '2026-02-01'
+  and event_time <= '2027-01-01'
+  and app_version >= '0.30.3'
+group by install_date, utm_campaign, step
+order by install_date, utm_campaign, step''',
+]
+
+
+
+sql_scene_progression = [
+'''drop table if exists vitrines.scene_progression''',
+'''create table if not exists vitrines.scene_progression as
+with battle_data as(
+	select
+		user_id,
+		event_time,
+		event_name,
+		event_name = 'scene_unlock' as is_new_scene,
+		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+	from rikx.events
+	where or(
+		and(event_name = 'battle_finish', parameters.result = 'win'),
+		event_name = 'scene_unlock'
+	)
+	  and app_version != 'dashboards_test'
+	  and event_time >= '2026-02-01'
+	  and event_time <= '2027-01-01'
+	  and app_version >= '0.30.3'
+	order by user_id, event_time
+),
+battle_stat as (
+	select
+		user_id,
+		event_time,
+		event_name,
+		sum(is_new_scene) over (
+			partition by user_id
+			order by event_time
+			rows between unbounded preceding and current row
+		) as scene_number,
+		if(previous_event_time > '1970-01-01 00:00:00', event_time - previous_event_time, 0) as delta
+	from battle_data
+)
+select
+	user_id,
+	toDate(install_time) as install_date,
+	utm_campaign,
+	scene_number,
+	sum(delta) as time_to_reach,
+	countIf(event_name = 'battle_finish') as battles
+from battle_stat as A
+left join vitrines.user_data as B
+using user_id
+group by user_id, install_date, utm_campaign, scene_number
+order by user_id, scene_number''',
+]
+
+
+
+sql_photo_progression = [
+'''drop table if exists vitrines.photo_progression''',
+'''create table if not exists vitrines.photo_progression as
+with battle_data as(
+	select
+		user_id,
+		event_time,
+		event_name,
+		event_name = 'new_photo' as is_new_photo,
+		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+	from rikx.events
+	where or(
+		and(event_name = 'battle_finish', parameters.result = 'win'),
+		event_name = 'new_photo'
+	)
+	  and app_version != 'dashboards_test'
+	  and event_time >= '2026-02-01'
+	  and event_time <= '2027-01-01'
+	  and app_version >= '0.30.3'
+	order by user_id, event_time
+),
+battle_stat as (
+	select
+		user_id,
+		event_time,
+		event_name,
+		sum(is_new_photo) over (
+			partition by user_id
+			order by event_time
+			rows between unbounded preceding and current row
+		) as photo_number,
+		if(previous_event_time > '1970-01-01 00:00:00', event_time - previous_event_time, 0) as delta
+	from battle_data
+)
+select
+	user_id,
+	toDate(install_time) as install_date,
+	utm_campaign,
+	photo_number,
+	sum(delta) as time_to_reach,
+	countIf(event_name = 'battle_finish') as battles
+from battle_stat as A
+left join vitrines.user_data as B
+using user_id
+group by user_id, install_date, utm_campaign, photo_number
+order by user_id, photo_number''',
+]
+
+
+
+sql_battles_progression = [
+'''drop table if exists vitrines.battles_progression''',
+'''create table if not exists vitrines.battles_progression as
+with battle_data as(
+	select
+		user_id,
+		event_time,
+		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+	from rikx.events
+	where event_name = 'battle_start'
+	  and app_version != 'dashboards_test'
+	  and event_time >= '2026-02-01'
+	  and event_time <= '2027-01-01'
+	  and app_version >= '0.30.3'
+	order by user_id, event_time
+),
+battle_stat as (
+	select
+		user_id,
+		event_time,
+		count(user_id) over (
+			partition by user_id
+			order by event_time
+			rows between unbounded preceding and current row
+		) as battle_number,
+		if(previous_event_time > '1970-01-01 00:00:00', event_time - previous_event_time, 0) as delta
+	from battle_data
+)
+select
+	toDate(install_time) as install_date,
+	utm_campaign,
+	battle_number,
+	uniqExact(user_id) as users,
+	sum(delta) as time_to_reach
+from battle_stat as A
+left join vitrines.user_data as B
+using user_id
+group by install_date, utm_campaign, battle_number
+order by battle_number''',
+]
 
 
 
@@ -249,15 +460,11 @@ with DAG(
         for query in queries:
             print(client.execute(query))
 
-
-
     users_data = PythonOperator(
         task_id='users_data',
         python_callable=execute_queries,
         op_kwargs={"queries": sql_users_data},
     )
-
-
 
     dau = PythonOperator(
         task_id='dau',
@@ -265,23 +472,17 @@ with DAG(
         op_kwargs={"queries": sql_dau},
     )
 
-
-
     mau = PythonOperator(
         task_id='mau',
         python_callable=execute_queries,
         op_kwargs={"queries": sql_mau},
     )
 
-
-
     wau = PythonOperator(
         task_id='wau',
         python_callable=execute_queries,
         op_kwargs={"queries": sql_wau},
-    )
-
-
+	)
 
     sticky = PythonOperator(
         task_id='sticky',
@@ -289,24 +490,48 @@ with DAG(
         op_kwargs={"queries": sql_sticky},
     )
 
-
-
     retention = PythonOperator(
         task_id='retention',
         python_callable=execute_queries,
         op_kwargs={"queries": sql_retention},
     )
 
-
-
     hourly_tech = PythonOperator(
         task_id='hourly_tech',
         python_callable=execute_queries,
         op_kwargs={"queries": sql_hourly_tech},
     )
+	
+    session_duration = PythonOperator(
+        task_id='session_duration',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_session_duration},
+    )
+
+    tutorial = PythonOperator(
+        task_id='tutorial',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_tutorial},
+    )
+
+    scene_progression = PythonOperator(
+        task_id='scene_progression',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_scene_progression},
+    )
+
+    photo_progression = PythonOperator(
+        task_id='photo_progression',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_photo_progression},
+    )
+
+    battles_progression = PythonOperator(
+        task_id='battles_progression',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_battles_progression},
+    )
 
 
 
-
-
-users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech
+users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression

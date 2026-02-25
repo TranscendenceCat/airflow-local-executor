@@ -14,6 +14,16 @@ select
 	user_id,
 	min(event_time) as install_time,
 	if(
+		(anyHeavy(toString(parameters.platform)) as tmp_platform) > '',
+		tmp_platform,
+		'other'
+	) as platform,
+	if(
+		(anyHeavy(toString(parameters.country)) as tmp_country) > '',
+		tmp_country,
+		'other'
+	) as country,
+	if(
 		(anyIf(toString(parameters.get_request.utm_campaign), event_name = 'registered') as campaign) > '',
 		campaign,
 		'other'

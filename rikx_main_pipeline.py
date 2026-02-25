@@ -229,6 +229,11 @@ sql_hourly_tech = [
 '''create table if not exists vitrines.hourly_tech_monitor as
 select 
 	toStartOfHour(event_time) as time,
+	if(
+		(anyHeavy(toString(parameters.platform)) as tmp_platform) > '',
+		tmp_platform,
+		'other'
+	) as platform,
 	uniqExact(user_id) as active_users,
 	count(distinct case when event_name = 'payment_completed' then user_id end) as paying_users,
 	countIf(event_name = 'payment_completed') as payments,
@@ -262,7 +267,6 @@ with events_with_sessions as (
 		user_id,
 		event_time,
 		previous_event_time,
-		-- Define session based on 30-minute inactivity (adjust as needed)
 		case when dateDiff('minute', previous_event_time, event_time) > 30
 		    and dateDiff('minute', previous2_event_time, previous_event_time) < 30
 			or previous_event_time is null
@@ -290,6 +294,8 @@ with events_with_sessions as (
 select
 	user_id,
 	toDate(install_time) as install_date,
+	platform,
+	country,
 	utm_campaign,
 	session_number,
 	dateDiff('second', min(event_time), max(event_time)) as session_duration_seconds,
@@ -297,7 +303,7 @@ select
 from events_with_sessions as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, session_number, utm_campaign, install_date
+group by user_id, session_number, utm_campaign, platform, country, install_date
 having session_duration_seconds > 0''',
 ]
 
@@ -308,11 +314,13 @@ sql_tutorial = [
 '''create table if not exists vitrines.tutorial as
 select
 	toDate(install_time) as install_date,
-	utm_campaign,
+	B.platform as platform,
+	B.country as country,
+	B.utm_campaign as utm_campaign,
 	event_name as step_name,
 	if(event_name == 'registered', -1, toInt32(extract(toString(parameters.step), '.*_0*([0-9]+)_.*'))) as step,
 	count() as count
-from rikx.events  as A
+from rikx.events as A
 left join vitrines.user_data as B
 using user_id
 where event_name in ('tutorial', 'registered')
@@ -320,8 +328,8 @@ where event_name in ('tutorial', 'registered')
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by install_date, utm_campaign, step, step_name
-order by install_date, utm_campaign, step, step_name''',
+group by install_date, utm_campaign, platform, country, step, step_name
+order by install_date, utm_campaign, platform, country, step, step_name''',
 ]
 
 
@@ -335,7 +343,7 @@ with battle_data as(
 		event_time,
 		event_name,
 		event_name = 'scene_unlock' as is_new_scene,
-		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+		lag(event_time) over (partition by user_id order by event_time) as previous_event_time
 	from rikx.events
 	where or(
 		and(event_name = 'battle_finish', parameters.result = 'win'),
@@ -363,6 +371,8 @@ battle_stat as (
 select
 	user_id,
 	toDate(install_time) as install_date,
+	platform,
+	country,
 	utm_campaign,
 	scene_number,
 	sum(delta) as time_to_reach,
@@ -370,7 +380,7 @@ select
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, install_date, utm_campaign, scene_number
+group by user_id, install_date, utm_campaign, platform, country, scene_number
 order by user_id, scene_number''',
 ]
 
@@ -385,7 +395,7 @@ with battle_data as(
 		event_time,
 		event_name,
 		event_name = 'new_photo' as is_new_photo,
-		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+		lag(event_time) over (partition by user_id order by event_time) as previous_event_time
 	from rikx.events
 	where or(
 		and(event_name = 'battle_finish', parameters.result = 'win'),
@@ -414,13 +424,15 @@ select
 	user_id,
 	toDate(install_time) as install_date,
 	utm_campaign,
+	platform,
+	country,
 	photo_number,
 	sum(delta) as time_to_reach,
 	countIf(event_name = 'battle_finish') as battles
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, install_date, utm_campaign, photo_number
+group by user_id, install_date, utm_campaign, platform, country, photo_number
 order by user_id, photo_number''',
 ]
 
@@ -433,7 +445,7 @@ with battle_data as(
 	select
 		user_id,
 		event_time,
-		lag(event_time) over (partition BY user_id order by event_time) as previous_event_time
+		lag(event_time) over (partition by user_id order by event_time) as previous_event_time
 	from rikx.events
 	where event_name = 'battle_finish'
 	  and app_version != 'dashboards_test'
@@ -457,23 +469,27 @@ battle_stat as (
 select
 	toDate(install_time) as install_date,
 	utm_campaign,
+	platform,
+	country,
 	battle_number,
 	uniqExact(user_id) as users,
 	sum(delta) as time_to_reach
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by install_date, utm_campaign, battle_number
+group by install_date, utm_campaign, platform, country, battle_number
 order by battle_number
 union all
 select
 	toDate(install_time) as install_date,
 	utm_campaign,
+	platform,
+	country,
 	0 as battle_number,
 	uniqExact(user_id) as users,
 	0 as time_to_reach
 from vitrines.user_data
-group by install_date, utm_campaign, battle_number''',
+group by install_date, utm_campaign, platform, country, battle_number''',
 ]
 
 

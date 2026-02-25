@@ -45,6 +45,8 @@ sql_dau = [
 select
 	date,
 	utm_campaign,
+	platform,
+	country,
 	dau,
 	paying_users,
 	payments,
@@ -55,6 +57,8 @@ select
 from (
 	select 
 	    toDate(event_time) as date,
+	    B.platform as platform,
+	    B.country as country,
 	    utm_campaign,
 	    uniqExact(user_id) as dau,
 	    count(distinct case when event_name = 'payment_completed' then user_id end) as paying_users,
@@ -68,13 +72,15 @@ from (
 	  and event_time >= '2026-02-01'
 	  and event_time <= '2027-01-01'
 	  and app_version >= '0.30.3'
-	group by date, utm_campaign
-	order by date, utm_campaign
+	group by date, utm_campaign, platform, country
+	order by date, utm_campaign, platform, country
 ) as A
 left join (
 	select
 		date,
 		utm_campaign,
+		platform,
+		country,
 		uniqExact(user_id) as installs,
 		uniqExact(if(has_logged, user_id, NULL)) as logins
 	from (
@@ -91,10 +97,10 @@ left join (
 	) as A
 	left join vitrines.user_data as B
 	using user_id
-	group by date, utm_campaign
-	order by date, utm_campaign
+	group by date, utm_campaign, platform, country
+	order by date, utm_campaign, platform, country
 ) as B
-using date, utm_campaign
+using date, utm_campaign, platform, country
 order by date''',
 ]
 
@@ -106,6 +112,8 @@ sql_mau = [
 '''create table if not exists vitrines.mau_dashboard as
 select
 	toDate(toStartOfMonth(event_time)) as month_start,
+	B.platform as platform,
+	B.country as country,
 	utm_campaign,
 	uniqExact(user_id) as mau
 from rikx.events as A
@@ -114,8 +122,8 @@ using user_id
 where event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by month_start, utm_campaign
-order by month_start, utm_campaign desc''',
+group by month_start, utm_campaign, platform, country
+order by month_start, utm_campaign, platform, country desc''',
 ]
 
 
@@ -126,6 +134,8 @@ sql_wau = [
 '''create table if not exists vitrines.wau_dashboard as
 select
 	week_start,
+	platform,
+	country,
 	utm_campaign,
 	uniqExact(user_id) as wau
 from (
@@ -141,8 +151,8 @@ from (
 ) as A
 left join vitrines.user_data as B
 using user_id
-group by week_start, utm_campaign
-order by week_start, utm_campaign desc''',
+group by week_start, utm_campaign, platform, country
+order by week_start, utm_campaign, platform, country desc''',
 ]
 
 
@@ -154,6 +164,8 @@ sql_sticky = [
 select
 	d.date as date,
 	d.utm_campaign as utm_campaign,
+	platform,
+	country,
 	d.dau as dau,
 	m.mau as mau,
 	round(d.dau * 100.0 / m.mau, 2) as sticky_dau_mau
@@ -161,6 +173,8 @@ from vitrines.dau_dashboard as d
 left join vitrines.mau_dashboard as m
 on toStartOfMonth(d.date) = m.month_start
 and d.utm_campaign = m.utm_campaign
+and d.platform = m.platform
+and d.country = m.country
 order by d.date desc''',
 ]
 
@@ -185,18 +199,22 @@ retention_calc as(
 	select
 		toDate(install_time) as install_date,
 		floor((activity_hour - toStartOfHour(install_time)) / 86400, 0) as day,
+		platform,
+		country,
 		utm_campaign,
 		uniqExact(B.user_id) as retained_users
 	from vitrines.user_data as A
 	left join hourly_activity as B
 	on A.user_id = B.user_id
 	and B.activity_hour >= toStartOfHour(A.install_time)
-	group by install_date, day, utm_campaign
-	order by install_date, day, utm_campaign
+	group by install_date, day, utm_campaign, platform, country
+	order by install_date, day, utm_campaign, platform, country
 )
 select
 	install_date,
 	day,
+	platform,
+	country,
 	utm_campaign,
 	max(retained_users) over (partition by install_date, utm_campaign) as cohort_size,
 	retained_users

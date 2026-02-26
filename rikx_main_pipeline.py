@@ -640,4 +640,4 @@ with DAG(
 
 
 
-users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression >> sql_heroines_by_battle
+users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression >> heroines_by_battle

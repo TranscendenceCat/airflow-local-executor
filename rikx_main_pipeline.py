@@ -501,7 +501,7 @@ with battles as (
 	select
 		user_id,
 		row_number(user_id) over (partition by user_id order by event_time) as battle_number,
-		if(empty((parameters.heroines::Array(String) as arr)) > 0, ['none'], arr) as heroines
+		if(empty((parameters.heroines::Array(String) as arr)) > 0, ['_none'], arr) as heroines
 	from rikx.events
 	where event_name = 'battle_start'
 	  and app_version != 'dashboards_test'

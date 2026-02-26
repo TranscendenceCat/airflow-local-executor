@@ -494,6 +494,52 @@ group by install_date, utm_campaign, platform, country, battle_number''',
 
 
 
+sql_heroines_by_battle = [
+'''drop table if exists vitrines.heroines_by_battle''',
+'''create table if not exists vitrines.heroines_by_battle as
+with battles as (
+	select
+		user_id,
+		row_number(user_id) over (partition by user_id order by event_time) as battle_number,
+		if(empty((parameters.heroines::Array(String) as arr)) > 0, ['none'], arr) as heroines
+	from rikx.events
+	where event_name = 'battle_start'
+	  and app_version != 'dashboards_test'
+	  and event_time >= '2026-02-01'
+	  and event_time <= '2027-01-01'
+	  and app_version >= '0.30.3'
+),
+full_data as (
+	select
+		user_id,
+		utm_campaign,
+		platform,
+		country,
+		battle_number,
+		arrayJoin(heroines) as heroine
+	from battles as A
+	left join vitrines.user_data as B
+	using user_id
+	order by user_id, battle_number, heroine
+)
+select
+	utm_campaign,
+	platform,
+	country,
+	battle_number,
+	heroine,
+	uniqExact(user_id) as users
+from full_data
+group by
+	utm_campaign,
+	platform,
+	country,
+	battle_number,
+	heroine''',
+]
+
+
+
 with DAG(
     dag_id="rikx_main_pipeline",
     start_date=datetime(2025, 2, 1),
@@ -586,6 +632,12 @@ with DAG(
         op_kwargs={"queries": sql_battles_progression},
     )
 
+    heroines_by_battle = PythonOperator(
+        task_id='heroines_by_battle',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_heroines_by_battle},
+    )
 
 
-users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression
+
+users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression >> sql_heroines_by_battle

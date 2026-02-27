@@ -240,11 +240,8 @@ sql_hourly_tech = [
 '''create table if not exists vitrines.hourly_tech_monitor as
 select 
 	toStartOfHour(event_time) as time,
-	if(
-		(anyHeavy(toString(parameters.platform)) as tmp_platform) > '',
-		tmp_platform,
-		'other'
-	) as platform,
+	platform,
+	app_version,
 	uniqExact(user_id) as active_users,
 	count(distinct case when event_name = 'payment_completed' then user_id end) as paying_users,
 	countIf(event_name = 'payment_completed') as payments,
@@ -264,7 +261,7 @@ where app_version != 'dashboards_test'
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by time
+group by time, platform, app_version
 order by time''',
 ]
 
@@ -307,6 +304,7 @@ select
 	toDate(install_time) as install_date,
 	platform,
 	country,
+	app_version,
 	utm_campaign,
 	session_number,
 	dateDiff('second', min(event_time), max(event_time)) as session_duration_seconds,
@@ -314,7 +312,7 @@ select
 from events_with_sessions as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, session_number, utm_campaign, platform, country, install_date
+group by user_id, session_number, utm_campaign, platform, country, app_version, install_date
 having session_duration_seconds > 0''',
 ]
 
@@ -327,6 +325,7 @@ select
 	toDate(install_time) as install_date,
 	B.platform as platform,
 	B.country as country,
+	B.app_version as app_version,
 	B.utm_campaign as utm_campaign,
 	event_name as step_name,
 	if(event_name == 'registered', -1, toInt32(extract(toString(parameters.step), '.*_0*([0-9]+)_.*'))) as step,
@@ -339,8 +338,8 @@ where event_name in ('tutorial', 'registered')
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by install_date, utm_campaign, platform, country, step, step_name
-order by install_date, utm_campaign, platform, country, step, step_name''',
+group by install_date, utm_campaign, platform, country, app_version, step, step_name
+order by install_date, utm_campaign, platform, country, app_version, step, step_name''',
 ]
 
 
@@ -384,6 +383,7 @@ select
 	toDate(install_time) as install_date,
 	platform,
 	country,
+	app_version,
 	utm_campaign,
 	scene_number,
 	sum(delta) as time_to_reach,
@@ -391,7 +391,7 @@ select
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, install_date, utm_campaign, platform, country, scene_number
+group by user_id, install_date, utm_campaign, platform, country, app_version, scene_number
 order by user_id, scene_number''',
 ]
 
@@ -437,13 +437,14 @@ select
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	photo_number,
 	sum(delta) as time_to_reach,
 	countIf(event_name = 'battle_finish') as battles
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by user_id, install_date, utm_campaign, platform, country, photo_number
+group by user_id, install_date, utm_campaign, platform, country, app_version, photo_number
 order by user_id, photo_number''',
 ]
 
@@ -482,13 +483,14 @@ select
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	battle_number,
 	uniqExact(user_id) as users,
 	sum(delta) as time_to_reach
 from battle_stat as A
 left join vitrines.user_data as B
 using user_id
-group by install_date, utm_campaign, platform, country, battle_number
+group by install_date, utm_campaign, platform, country, battle_number, app_version
 order by battle_number
 union all
 select
@@ -496,11 +498,12 @@ select
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	0 as battle_number,
 	uniqExact(user_id) as users,
 	0 as time_to_reach
 from vitrines.user_data
-group by install_date, utm_campaign, platform, country, battle_number''',
+group by install_date, utm_campaign, platform, country, battle_number, app_version''',
 ]
 
 
@@ -526,6 +529,7 @@ full_data as (
 		utm_campaign,
 		platform,
 		country,
+		app_version,
 		battle_number,
 		arrayJoin(heroines) as heroine
 	from battles as A
@@ -537,6 +541,7 @@ select
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	battle_number,
 	heroine,
 	uniqExact(user_id) as users
@@ -545,6 +550,7 @@ group by
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	battle_number,
 	heroine''',
 ]

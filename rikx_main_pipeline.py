@@ -27,12 +27,13 @@ select
 		(anyIf(toString(parameters.get_request.utm_campaign), event_name = 'registered') as campaign) > '',
 		campaign,
 		'other'
-	) as utm_campaign
+	) as utm_campaign,
+	anyIf(app_version, event_name = 'registered') as app_version
 from rikx.events
-where app_version != 'dashboards_test'
+where rikx.events.app_version != 'dashboards_test'
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
-  and app_version >= '0.30.3'
+  and rikx.events.app_version >= '0.30.3'
 group by user_id''',
 ]
 
@@ -47,6 +48,7 @@ select
 	utm_campaign,
 	platform,
 	country,
+	app_version,
 	dau,
 	paying_users,
 	payments,
@@ -60,6 +62,7 @@ from (
 	    B.platform as platform,
 	    B.country as country,
 	    utm_campaign,
+	    B.app_version as app_version,
 	    uniqExact(user_id) as dau,
 	    count(distinct case when event_name = 'payment_completed' then user_id end) as paying_users,
 	    countIf(event_name = 'payment_completed') as payments,
@@ -72,8 +75,8 @@ from (
 	  and event_time >= '2026-02-01'
 	  and event_time <= '2027-01-01'
 	  and app_version >= '0.30.3'
-	group by date, utm_campaign, platform, country
-	order by date, utm_campaign, platform, country
+	group by date, utm_campaign, platform, country, app_version
+	order by date, utm_campaign, platform, country, app_version
 ) as A
 left join (
 	select
@@ -81,6 +84,7 @@ left join (
 		utm_campaign,
 		platform,
 		country,
+		app_version,
 		uniqExact(user_id) as installs,
 		uniqExact(if(has_logged, user_id, NULL)) as logins
 	from (
@@ -97,10 +101,10 @@ left join (
 	) as A
 	left join vitrines.user_data as B
 	using user_id
-	group by date, utm_campaign, platform, country
-	order by date, utm_campaign, platform, country
+	group by date, utm_campaign, platform, country, app_version
+	order by date, utm_campaign, platform, country, app_version
 ) as B
-using date, utm_campaign, platform, country
+using date, utm_campaign, platform, country, app_version
 order by date''',
 ]
 
@@ -114,16 +118,18 @@ select
 	toDate(toStartOfMonth(event_time)) as month_start,
 	B.platform as platform,
 	B.country as country,
+	A.app_version,
 	utm_campaign,
 	uniqExact(user_id) as mau
 from rikx.events as A
 left join vitrines.user_data as B
 using user_id
-where event_time >= '2026-02-01'
+where app_version != 'dashboards_test'
+  and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and app_version >= '0.30.3'
-group by month_start, utm_campaign, platform, country
-order by month_start, utm_campaign, platform, country desc''',
+group by month_start, utm_campaign, platform, country, app_version
+order by month_start, utm_campaign, platform, country, app_version desc''',
 ]
 
 
@@ -136,23 +142,25 @@ select
 	week_start,
 	platform,
 	country,
+	A.app_version as app_version,
 	utm_campaign,
 	uniqExact(user_id) as wau
 from (
 	select
 		date_trunc('week', event_time) as week_start,
-		user_id
+		user_id,
+		anyHeavy(app_version) as app_version
 	from rikx.events
-	where app_version != 'dashboards_test'
+	where rikx.events.app_version != 'dashboards_test'
 	  and event_time >= '2026-02-01'
 	  and event_time <= '2027-01-01'
-	  and app_version >= '0.30.3'
+	  and rikx.events.app_version >= '0.30.3'
 	group by week_start, user_id
 ) as A
 left join vitrines.user_data as B
 using user_id
-group by week_start, utm_campaign, platform, country
-order by week_start, utm_campaign, platform, country desc''',
+group by week_start, utm_campaign, platform, country, app_version
+order by week_start, utm_campaign, platform, country, app_version desc''',
 ]
 
 
@@ -166,6 +174,7 @@ select
 	d.utm_campaign as utm_campaign,
 	platform,
 	country,
+	app_version,
 	d.dau as dau,
 	m.mau as mau,
 	round(d.dau * 100.0 / m.mau, 2) as sticky_dau_mau
@@ -175,6 +184,7 @@ on toStartOfMonth(d.date) = m.month_start
 and d.utm_campaign = m.utm_campaign
 and d.platform = m.platform
 and d.country = m.country
+and d.app_version = m.app_version
 order by d.date desc''',
 ]
 
@@ -183,8 +193,7 @@ order by d.date desc''',
 # Retention
 sql_retention = [
 '''drop table if exists vitrines.retention_dashboard''',
-'''create table if not exists vitrines.retention_dashboard as
-with hourly_activity as (
+'''with hourly_activity as (
 	select 
 		user_id,
 		toStartOfHour(event_time) as activity_hour
@@ -201,20 +210,22 @@ retention_calc as(
 		floor((activity_hour - toStartOfHour(install_time)) / 86400, 0) as day,
 		platform,
 		country,
+		app_version,
 		utm_campaign,
 		uniqExact(B.user_id) as retained_users
 	from vitrines.user_data as A
 	left join hourly_activity as B
 	on A.user_id = B.user_id
 	and B.activity_hour >= toStartOfHour(A.install_time)
-	group by install_date, day, utm_campaign, platform, country
-	order by install_date, day, utm_campaign, platform, country
+	group by install_date, day, utm_campaign, platform, country, app_version
+	order by install_date, day, utm_campaign, platform, country, app_version
 )
 select
 	install_date,
 	day,
 	platform,
 	country,
+	app_version,
 	utm_campaign,
 	max(retained_users) over (partition by install_date, utm_campaign) as cohort_size,
 	retained_users

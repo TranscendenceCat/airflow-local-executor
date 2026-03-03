@@ -240,8 +240,8 @@ sql_hourly_tech = [
 '''create table if not exists vitrines.hourly_tech_monitor as
 select 
 	toStartOfHour(event_time) as time,
-	platform,
-	app_version,
+	B.platform as platform,
+	A.app_version as app_version,
 	uniqExact(user_id) as active_users,
 	count(distinct case when event_name = 'payment_completed' then user_id end) as paying_users,
 	countIf(event_name = 'payment_completed') as payments,
@@ -256,7 +256,9 @@ select
 	countIf(event_name = 'battlepass_gain') as battlepass_gain,
 	countIf(event_name = 'payment_started') as payment_started,
 	countIf(event_name = 'payment_completed') as payment_completed
-from rikx.events
+from rikx.events as A
+left join vitrines.user_data as B
+on A.user_id = B.user_id
 where app_version != 'dashboards_test'
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'

@@ -193,7 +193,8 @@ order by d.date desc''',
 # Retention
 sql_retention = [
 '''drop table if exists vitrines.retention_dashboard''',
-'''with hourly_activity as (
+'''create table if not exists vitrines.retention_dashboard as
+with hourly_activity as (
 	select 
 		user_id,
 		toStartOfHour(event_time) as activity_hour
@@ -559,6 +560,77 @@ group by
 
 
 
+sql_heroines_upgrades = [
+'''drop table if exists vitrines.heroines_upgrades''',
+'''create table if not exists vitrines.heroines_upgrades as
+select
+	B.utm_campaign as utm_campaign,
+	B.platform as platform,
+	B.country as country,
+	B.app_version as app_version,
+	toInt32(parameters.final_level) as final_level,
+	toString(parameters.id) as heroine,
+	uniqExact(user_id) as upgrades
+from rikx.events as A
+left join vitrines.user_data as B
+using user_id
+where event_name = 'heroine_upgrade'
+  and app_version != 'dashboards_test'
+  and event_time >= '2026-02-01'
+  and event_time <= '2027-01-01'
+  and app_version >= '0.30.3'
+group by utm_campaign, platform, country, app_version, final_level, heroine''',
+]
+
+
+
+sql_battle_stat = [
+'''drop table if exists vitrines.battle_stat''',
+'''create table if not exists vitrines.battle_stat as
+with main_data as (
+    select
+        user_id,
+    	B.utm_campaign as utm_campaign,
+    	B.platform as platform,
+    	B.country as country,
+    	B.app_version as app_version,
+        row_number(user_id) over (partition by user_id order by event_time) as battle_number,
+    	toString(parameters.result) as result,
+       	length(parameters.round_results) as rounds,
+    	arrayCount(x -> (x = true), parameters.round_results::Array(Bool)) as wins,
+        arrayCount(x -> (x = false), parameters.round_results::Array(Bool)) as loses,
+    	and(battle_number >= 3, wins < 10, loses < 10) as leaved
+    from rikx.events as A
+    left join vitrines.user_data as B
+    using user_id
+    where event_name = 'battle_finish'
+      and app_version != 'dashboards_test'
+      and event_time >= '2026-02-01'
+      and event_time <= '2027-01-01'
+      and app_version >= '0.30.3'
+)
+select
+    utm_campaign,
+    platform,
+    country,
+    app_version,
+    battle_number,
+    result,
+    leaved,
+    count(user_id) as battles
+from main_data
+group by
+    utm_campaign,
+    platform,
+    country,
+    app_version,
+    battle_number,
+    result,
+    leaved''',
+]
+
+
+
 with DAG(
     dag_id="rikx_main_pipeline",
     start_date=datetime(2025, 2, 1),
@@ -657,6 +729,18 @@ with DAG(
         op_kwargs={"queries": sql_heroines_by_battle},
     )
 
+    heroines_upgrades = PythonOperator(
+        task_id='heroines_upgrades',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_heroines_upgrades},
+    )
+
+    battle_stat = PythonOperator(
+        task_id='battle_stat',
+        python_callable=execute_queries,
+        op_kwargs={"queries": sql_battle_stat},
+    )
 
 
-users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression >> heroines_by_battle
+
+users_data >> dau >> mau >> wau >> sticky >> retention >> hourly_tech >> session_duration >> tutorial >> scene_progression >> photo_progression >> battles_progression >> heroines_by_battle >> heroines_upgrades >> battle_stat

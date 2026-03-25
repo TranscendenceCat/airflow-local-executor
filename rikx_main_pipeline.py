@@ -641,91 +641,91 @@ with DAG(
 
     users_data = ClickHouseOperator(
         task_id='users_data',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_users_data,
     )
 
     dau = ClickHouseOperator(
         task_id='dau',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_dau,
     )
 
     mau = ClickHouseOperator(
         task_id='mau',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_mau,
     )
 
     wau = ClickHouseOperator(
         task_id='wau',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_wau,
 	)
 
     sticky = ClickHouseOperator(
         task_id='sticky',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_sticky,
     )
 
     retention = ClickHouseOperator(
         task_id='retention',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_retention,
     )
 
     hourly_tech = ClickHouseOperator(
         task_id='hourly_tech',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_hourly_tech,
     )
 	
     session_duration = ClickHouseOperator(
         task_id='session_duration',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_session_duration,
     )
 
     tutorial = ClickHouseOperator(
         task_id='tutorial',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_tutorial,
     )
 
     scene_progression = ClickHouseOperator(
         task_id='scene_progression',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_scene_progression,
     )
 
     photo_progression = ClickHouseOperator(
         task_id='photo_progression',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_photo_progression,
     )
 
     battles_progression = ClickHouseOperator(
         task_id='battles_progression',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_battles_progression,
     )
 
     heroines_by_battle = ClickHouseOperator(
         task_id='heroines_by_battle',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_heroines_by_battle,
     )
 
     heroines_upgrades = ClickHouseOperator(
         task_id='heroines_upgrades',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_heroines_upgrades,
     )
 
     battle_stat = ClickHouseOperator(
         task_id='battle_stat',
-        clickhouse_conn_id='clickhouse_rikx',
+        clickhouse_conn_id='clickhouse-rikx',
         sql=sql_battle_stat,
     )
 

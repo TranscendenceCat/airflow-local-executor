@@ -1,8 +1,6 @@
 from datetime import datetime
 from airflow import DAG
-from airflow.providers.standard.operators.python import PythonOperator
-
-import clickhouse_driver
+from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
 
 
@@ -641,104 +639,94 @@ with DAG(
     tags=['clickhouse'],
 ) as dag:
 
-    def execute_queries(queries):
-        client = clickhouse_driver.Client(
-            host='138.68.75.226',
-            port='9000',
-            user='rikx',
-            password='123456',
-        )
-        for query in queries:
-            print(client.execute(query))
-
-    users_data = PythonOperator(
+    users_data = ClickHouseOperator(
         task_id='users_data',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_users_data},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_users_data,
     )
 
-    dau = PythonOperator(
+    dau = ClickHouseOperator(
         task_id='dau',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_dau},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_dau,
     )
 
-    mau = PythonOperator(
+    mau = ClickHouseOperator(
         task_id='mau',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_mau},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_mau,
     )
 
-    wau = PythonOperator(
+    wau = ClickHouseOperator(
         task_id='wau',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_wau},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_wau,
 	)
 
-    sticky = PythonOperator(
+    sticky = ClickHouseOperator(
         task_id='sticky',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_sticky},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_sticky,
     )
 
-    retention = PythonOperator(
+    retention = ClickHouseOperator(
         task_id='retention',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_retention},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_retention,
     )
 
-    hourly_tech = PythonOperator(
+    hourly_tech = ClickHouseOperator(
         task_id='hourly_tech',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_hourly_tech},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_hourly_tech,
     )
 	
-    session_duration = PythonOperator(
+    session_duration = ClickHouseOperator(
         task_id='session_duration',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_session_duration},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_session_duration,
     )
 
-    tutorial = PythonOperator(
+    tutorial = ClickHouseOperator(
         task_id='tutorial',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_tutorial},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_tutorial,
     )
 
-    scene_progression = PythonOperator(
+    scene_progression = ClickHouseOperator(
         task_id='scene_progression',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_scene_progression},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_scene_progression,
     )
 
-    photo_progression = PythonOperator(
+    photo_progression = ClickHouseOperator(
         task_id='photo_progression',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_photo_progression},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_photo_progression,
     )
 
-    battles_progression = PythonOperator(
+    battles_progression = ClickHouseOperator(
         task_id='battles_progression',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_battles_progression},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_battles_progression,
     )
 
-    heroines_by_battle = PythonOperator(
+    heroines_by_battle = ClickHouseOperator(
         task_id='heroines_by_battle',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_heroines_by_battle},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_heroines_by_battle,
     )
 
-    heroines_upgrades = PythonOperator(
+    heroines_upgrades = ClickHouseOperator(
         task_id='heroines_upgrades',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_heroines_upgrades},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_heroines_upgrades,
     )
 
-    battle_stat = PythonOperator(
+    battle_stat = ClickHouseOperator(
         task_id='battle_stat',
-        python_callable=execute_queries,
-        op_kwargs={"queries": sql_battle_stat},
+        clickhouse_conn_id='clickhouse_rikx',
+        sql=sql_battle_stat,
     )
 
 

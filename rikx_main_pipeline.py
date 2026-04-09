@@ -634,7 +634,7 @@ group by
 
 default_args = {
     'retries': 3,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(seconds=10),
 }
 
 with DAG(

@@ -26,13 +26,18 @@ select
 		campaign,
 		'other'
 	) as utm_campaign,
+	if(
+		(anyIf(toString(parameters.ab_tests.no_jokers), event_name = 'registered') as ab1) > '',
+		ab1,
+		'other'
+	) as ab_jockers,
 	anyIf(app_version, event_name = 'registered') as app_version
 from rikx.events
 where rikx.events.app_version != 'dashboards_test'
   and event_time >= '2026-02-01'
   and event_time <= '2027-01-01'
   and rikx.events.app_version >= '0.30.3'
-group by user_id''',
+group by user_id;''',
 ]
 
 

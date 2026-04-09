@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.clickhouse.operators.clickhouse import ClickHouseOperator
 
@@ -642,7 +642,7 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     retries=3,
-    retry_delay=datetime.timedelta(minutes=5),
+    retry_delay=timedelta(minutes=5),
     tags=['clickhouse'],
 ) as dag:
 

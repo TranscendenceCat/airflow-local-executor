@@ -632,7 +632,10 @@ group by
     leaved''',
 ]
 
-
+default_args = {
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+}
 
 with DAG(
     dag_id="rikx_main_pipeline",
@@ -641,8 +644,7 @@ with DAG(
     schedule='0 * * * *',
     catchup=False,
     max_active_runs=1,
-    retries=3,
-    retry_delay=timedelta(minutes=5),
+	default_args=default_args,
     tags=['clickhouse'],
 ) as dag:
 
